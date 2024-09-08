@@ -33,7 +33,6 @@ header p {
   color: #b0b0b0;
 }
 
-
 /* Form Styling */
 form {
   max-width: 600px;
@@ -119,8 +118,6 @@ button:active {
   display: block;
   margin: 0 auto 20px;
 }
-
-
 
 
 /* Profile Pic Styling */
