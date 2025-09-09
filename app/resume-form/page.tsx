@@ -3,6 +3,26 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+type Experience = {
+  role: string;
+  company: string;
+  duration: string;
+  description: string;
+};
+
+type Education = {
+  degree: string;
+  institution: string;
+  period: string;
+  details: string;
+};
+
+type Project = {
+  title: string;
+  link: string;
+  summary: string;
+};
+
 type ResumeData = {
   // Personal
   name: string;
@@ -17,29 +37,19 @@ type ResumeData = {
   // Profile
   summary: string;
 
-  // Experience (allow multiple entries)
-  experiences: {
-    role: string;
-    company: string;
-    duration: string;
-    description: string;
-  }[];
+  // Experience
+  experiences: Experience[];
 
-  // Education (allow multiple)
-  education: {
-    degree: string;
-    institution: string;
-    period: string;
-    details: string;
-  }[];
+  // Education
+  education: Education[];
 
   // Technical Skills
-  technicalSkills: string; // comma separated
-  toolsWorkflow: string; // comma separated
-  aiPromptEngineering: string; // comma separated
+  technicalSkills: string;
+  toolsWorkflow: string;
+  aiPromptEngineering: string;
 
   // Projects
-  projects: { title: string; link: string; summary: string }[];
+  projects: Project[];
 
   // Certifications & Achievements
   certifications: string;
@@ -52,6 +62,8 @@ type ResumeData = {
   hobbies: string;
 };
 
+type SectionKey = 'experiences' | 'education' | 'projects';
+
 export default function ExpandedResumeForm() {
   const [formData, setFormData] = useState<ResumeData>({
     name: '',
@@ -63,12 +75,8 @@ export default function ExpandedResumeForm() {
     upwork: '',
     portfolio: '',
     summary: '',
-    experiences: [
-      { role: '', company: '', duration: '', description: '' },
-    ],
-    education: [
-      { degree: '', institution: '', period: '', details: '' },
-    ],
+    experiences: [{ role: '', company: '', duration: '', description: '' }],
+    education: [{ degree: '', institution: '', period: '', details: '' }],
     technicalSkills: '',
     toolsWorkflow: '',
     aiPromptEngineering: '',
@@ -78,35 +86,40 @@ export default function ExpandedResumeForm() {
     languages: '',
     hobbies: '',
   });
+
   const router = useRouter();
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-    section?: string,
+  const handleChange = <
+    T extends SectionKey,
+    K extends keyof ResumeData[T][number]
+  >(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    section?: T,
     index?: number,
-    field?: string
+    field?: K
   ) => {
     if (section && typeof index === 'number' && field) {
-      const list = [...(formData as any)[section]];
+      const list = [...formData[section]];
       list[index] = { ...list[index], [field]: e.target.value };
-      setFormData({ ...formData, [section]: list } as any);
+      setFormData({ ...formData, [section]: list });
     } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
+      const { name, value } = e.target;
+      setFormData({ ...formData, [name]: value } as ResumeData);
     }
   };
 
-  const addEntry = (section: 'experiences' | 'education' | 'projects') => {
-    const template = {
-      experiences: { role: '', company: '', duration: '', description: '' },
-      education: { degree: '', institution: '', period: '', details: '' },
-      projects: { title: '', link: '', summary: '' },
-    }[section];
+  const addEntry = (section: SectionKey) => {
+    const template: ResumeData[SectionKey][number] =
+      section === 'experiences'
+        ? { role: '', company: '', duration: '', description: '' }
+        : section === 'education'
+        ? { degree: '', institution: '', period: '', details: '' }
+        : { title: '', link: '', summary: '' };
+
     setFormData({
       ...formData,
-      [section]: [(formData as any)[section], template].flat(),
-    } as any);
+      [section]: [...formData[section], template],
+    });
   };
 
   const handleView = () => {
@@ -177,9 +190,9 @@ export default function ExpandedResumeForm() {
                       {label}
                     </label>
                     <input
-                      value={(exp as any)[field]}
+                      value={exp[field as keyof Experience]}
                       onChange={(e) =>
-                        handleChange(e, 'experiences', idx, field)
+                        handleChange(e, 'experiences', idx, field as keyof Experience)
                       }
                       className="w-full p-3 border rounded-lg"
                     />
@@ -209,9 +222,7 @@ export default function ExpandedResumeForm() {
 
           {/* Education Section */}
           <div>
-            <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-              Education
-            </h3>
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">Education</h3>
             {formData.education.map((edu, idx) => (
               <div key={idx} className="space-y-3 mb-6">
                 {[
@@ -224,8 +235,10 @@ export default function ExpandedResumeForm() {
                       {label}
                     </label>
                     <input
-                      value={(edu as any)[field]}
-                      onChange={(e) => handleChange(e, 'education', idx, field)}
+                      value={edu[field as keyof Education]}
+                      onChange={(e) =>
+                        handleChange(e, 'education', idx, field as keyof Education)
+                      }
                       className="w-full p-3 border rounded-lg"
                     />
                   </div>
@@ -236,7 +249,9 @@ export default function ExpandedResumeForm() {
                 <textarea
                   value={edu.details}
                   rows={2}
-                  onChange={(e) => handleChange(e, 'education', idx, 'details')}
+                  onChange={(e) =>
+                    handleChange(e, 'education', idx, 'details')
+                  }
                   className="w-full p-3 border rounded-lg"
                 />
               </div>
@@ -294,20 +309,26 @@ export default function ExpandedResumeForm() {
                 <label className="block text-sm text-gray-700 mb-1">Title</label>
                 <input
                   value={proj.title}
-                  onChange={(e) => handleChange(e, 'projects', idx, 'title')}
+                  onChange={(e) =>
+                    handleChange(e, 'projects', idx, 'title')
+                  }
                   className="w-full p-3 border rounded-lg"
                 />
                 <label className="block text-sm text-gray-700 mb-1">Link</label>
                 <input
                   value={proj.link}
-                  onChange={(e) => handleChange(e, 'projects', idx, 'link')}
+                  onChange={(e) =>
+                    handleChange(e, 'projects', idx, 'link')
+                  }
                   className="w-full p-3 border rounded-lg"
                 />
                 <label className="block text-sm text-gray-700 mb-1">Summary</label>
                 <textarea
                   value={proj.summary}
                   rows={2}
-                  onChange={(e) => handleChange(e, 'projects', idx, 'summary')}
+                  onChange={(e) =>
+                    handleChange(e, 'projects', idx, 'summary')
+                  }
                   className="w-full p-3 border rounded-lg"
                 />
               </div>
